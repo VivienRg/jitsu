@@ -10,6 +10,9 @@ const SignatureLayout = "2006-01-02T15:04:05.000Z"
 type TimeInterval struct {
 	TimeZoneID string
 
+	StartTime time.Time `json:"start_time"`
+    	EndTime   time.Time `json:"end_time"`
+
 	granularity schema.Granularity
 	time        time.Time
 }
