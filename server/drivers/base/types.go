@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	StoplightType	    = "stoplight"
 	AmplitudeType       = "amplitude"
 	FbMarketingType     = "facebook_marketing"
 	FirebaseType        = "firebase"
@@ -302,4 +303,13 @@ func WaitReadiness(driver CLIDriver, taskLogger logging.TaskLogger) (bool, error
 	}
 
 	return driver.Ready()
+}
+
+// CollectionConfig defines the configuration options for the Collection in a data source driver
+type CollectionConfig struct {
+	// Add your CollectionConfig fields here
+	// For example, if your Stoplight driver requires specific configuration options, you can define them here.
+	// Example:
+	APIKey     string `mapstructure:"api_key" json:"api_key,omitempty" yaml:"api_key,omitempty"`
+	SomeOption string `mapstructure:"some_option" json:"some_option,omitempty" yaml:"some_option,omitempty"`
 }
