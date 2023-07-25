@@ -1,0 +1,108 @@
+version: "2.3"
+networks:
+  main:
+  traefik-net:
+    name: traefik-net
+    external: true
+
+services:
+  jitsu:
+    container_name: jitsu
+    #image: jitsucom/jitsu
+    image: vivienroggero/jitsu
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - USER_RECOGNITION_ENABLED=true
+      - USER_RECOGNITION_REDIS_URL=redis://redis_users_recognition:6380
+      - TERM=xterm-256color
+      - CLUSTER_ADMIN_TOKEN=ifhj20389ifjw-90ufj80j32hj89-vh893hf
+      - JITSU_CONFIGURATOR_URL=https://jitsu.data.roggero.io
+      - SLACK_NOTIFICATIONS_WEBHOOK=https://hooks.slack.com/services/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
+      - JITSU_UI_BASE_URL=https://jitsu.data.roggero.io
+      - BACKEND_API_BASE=https://jitsu.data.roggero.io
+      - SERVER_PORT=8000
+      - COORDINATION_TYPE=redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./compose-data/server/data/logs:/home/eventnative/data/logs
+      - ./compose-data/server/data/logs/events:/home/eventnative/data/logs/events
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jitsu_workspace_vr:/home/eventnative/data/airbyte
+    restart: always
+    #ports:
+    #  - "8000:8000"
+    networks:
+      - main
+      - traefik-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-net
+      - traefik.http.routers.jitsu-rtr.tls=true
+      - traefik.http.routers.jitsu-rtr.entrypoints=https
+      - traefik.http.routers.jitsu-rtr.middlewares=chain-no-auth@file
+      - traefik.http.services.jitsu-svc.loadbalancer.server.port=8000
+      - traefik.http.routers.jitsu-rtr.rule=Host(`jserv.data.roggero.io`)
+
+  jitsu-configurator:
+    container_name: jitsu-configurator
+    image: jitsucom/configurator
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - USER_RECOGNITION_ENABLED=true
+      - USER_RECOGNITION_REDIS_URL=redis://redis_users_recognition:6380
+      - TERM=xterm-256color
+      - CLUSTER_ADMIN_TOKEN=ifhj20389ifjw-90ufj80j32hj89-vh893hf
+      - JITSU_SERVER_URL=https://jserv.data.roggero.io
+      - COORDINATION_TYPE=redis
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./compose-data/configurator/data/logs:/home/configurator/data/logs
+    restart: always
+    #ports:
+    #  - "7000:7000"
+    networks:
+      - main
+      - traefik-net
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-net
+      - traefik.http.routers.jitsu-c-rtr.tls=true
+      - traefik.http.routers.jitsu-c-rtr.entrypoints=https
+      - traefik.http.routers.jitsu-c-rtr.middlewares=chain-no-auth@file
+      - traefik.http.services.jitsu-c-svc.loadbalancer.server.port=7000
+      - traefik.http.routers.jitsu-c-rtr.rule=Host(`jitsu.data.roggero.io`)
+
+  redis:
+    container_name: jitsu_redis
+    image: redis:6.2.6-bullseye
+    volumes:
+      - ./compose-data/redis/data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -h localhost -p 6379 PING"]
+      interval: 1s
+      timeout: 30s
+    networks:
+      - main
+  redis_users_recognition:
+    container_name: jitsu_redis_users_recognition
+    image: redis:6.2.6-bullseye
+    volumes:
+      - ./compose-data/redis_users_recognition/data:/data
+      - ./compose-data/redis_users_recognition/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: always
+    networks:
+      - main
+
+volumes:
+  jitsu_workspace_vr:
+    name: jitsu_workspace_vr
